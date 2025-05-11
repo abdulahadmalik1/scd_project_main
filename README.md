@@ -1,33 +1,29 @@
-# Create README.md in project root
-cat > README.md << EOF
-# Attendance Management System
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
 
-## Overview
-A full-stack attendance management system with Docker support.
+# Production build files
+build/
+dist/
 
-## Technologies
-- Frontend: React.js
-- Backend: Node.js/Express
-- Database: MongoDB
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-## Running with Docker
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
 
-### Frontend
-\`\`\`bash
-cd frontend
-docker build -t attendance-frontend .
-docker run -d --name frontend --network="host" attendance-frontend
-\`\`\`
+# OS files
+.DS_Store
+Thumbs.db
 
-### Backend
-\`\`\`bash
-cd backend
-docker build -t attendance-backend .
-docker run -d --name backend -p 5000:5000 attendance-backend
-\`\`\`
-
-## Running Locally
-1. Install dependencies: \`npm install\`
-2. Start backend: \`cd backend && npm start\`
-3. Start frontend: \`cd frontend && npm start\`
-EOF
+# Docker volumes
+mongo-data/
