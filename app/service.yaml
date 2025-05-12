@@ -1,0 +1,41 @@
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30000
+  type: NodePort
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 5000
+    targetPort: 5000
+    nodePort: 30005
+  type: NodePort
+---
+# MongoDB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+spec:
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+  type: ClusterIP

@@ -1,0 +1,102 @@
+name: Build and Deploy to Minikube
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker to use Minikube's environment
+      run: |
+        echo "Configuring Docker to use Minikube's daemon..."
+        eval $(minikube docker-env)
+
+    - name: Clean up existing resources
+      run: |
+        echo "Cleaning up existing Kubernetes resources..."
+        kubectl delete deployments --all || true
+        kubectl delete services --all || true
+        kubectl delete configmaps --all || true
+        kubectl delete pods --all || true
+        kubectl delete pvc --all || true
+
+    - name: Build Docker images
+      run: |
+        echo "Building Docker images..."
+        # Build frontend image
+        docker build -t abdulahadmalik/attendance-frontend:latest ./frontend
+        
+        # Build backend image
+        docker build -t abdulahadmalik/attendance-backend:latest ./backend
+
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "abdulahadmalik" --password-stdin
+
+    - name: Push Docker images to Docker Hub
+      run: |
+        echo "Pushing images to Docker Hub..."
+        docker push abdulahadmalik/attendance-frontend:latest
+        docker push abdulahadmalik/attendance-backend:latest
+
+    - name: Deploy to Minikube
+      run: |
+        echo "Deploying to Minikube..."
+        kubectl apply -f deployment.yaml
+        kubectl apply -f service.yaml
+        kubectl apply -f nginx-configmap.yaml
+        kubectl apply -f localhost-service.yaml
+        
+        # Update frontend deployment to use the nginx config
+        kubectl patch deployment frontend --patch '
+        {
+          "spec": {
+            "template": {
+              "spec": {
+                "containers": [{
+                  "name": "frontend",
+                  "volumeMounts": [{
+                    "name": "nginx-config",
+                    "mountPath": "/etc/nginx/conf.d/default.conf",
+                    "subPath": "default.conf"
+                  }]
+                }],
+                "volumes": [{
+                  "name": "nginx-config",
+                  "configMap": {
+                    "name": "nginx-config"
+                  }
+                }]
+              }
+            }
+          }
+        }'
+        
+        # Restart the frontend deployment to apply changes
+        kubectl rollout restart deployment frontend
+
+    - name: Start port-forwarding in background
+      run: |
+        echo "Starting port-forwarding..."
+        nohup kubectl port-forward deployment/backend 5000:5000 > port-forward.log 2>&1 &
+        echo "Port forwarding started"
+
+    - name: Verify deployment
+      run: |
+        echo "Verifying deployment..."
+        kubectl get pods
+        echo "Waiting for pods to be ready..."
+        sleep 30
+        kubectl get pods
+        echo "Checking service URLs..."
+        minikube service list
+        echo "Frontend URL:"
+        minikube service frontend --url
+        echo "Backend URL:"
+        minikube service backend --url
