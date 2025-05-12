@@ -8,6 +8,7 @@ on:
 jobs:
   build-deploy:
     runs-on: self-hosted
+    timeout-minutes: 10  # Add a timeout to prevent jobs from hanging indefinitely
 
     steps:
     - name: Checkout code
@@ -17,7 +18,6 @@ jobs:
       run: |
         echo "Checking directory structure..."
         ls -la app/
-        # This will help confirm what's inside the app directory
 
     - name: Set up Docker to use Minikube's environment
       run: |
@@ -87,22 +87,35 @@ jobs:
         # Restart the frontend deployment to apply changes
         kubectl rollout restart deployment frontend
 
-    - name: Start port-forwarding in background
+    - name: Wait for deployments to be ready
       run: |
-        echo "Starting port-forwarding..."
-        nohup kubectl port-forward deployment/backend 5000:5000 > port-forward.log 2>&1 &
-        echo "Port forwarding started"
+        echo "Waiting for deployments to be ready..."
+        kubectl rollout status deployment/frontend --timeout=90s
+        kubectl rollout status deployment/backend --timeout=90s
+        kubectl rollout status deployment/mongodb --timeout=90s
 
-    - name: Verify deployment
+    - name: Display service information
       run: |
-        echo "Verifying deployment..."
-        kubectl get pods
-        echo "Waiting for pods to be ready..."
-        sleep 30
-        kubectl get pods
-        echo "Checking service URLs..."
-        minikube service list
+        echo "Service information:"
+        kubectl get services
+        
         echo "Frontend URL:"
         minikube service frontend --url
+        
         echo "Backend URL:"
         minikube service backend --url
+
+    - name: Provide manual access instructions
+      run: |
+        echo "=== DEPLOYMENT SUCCESSFUL ==="
+        echo "To access your application, execute these commands manually:"
+        echo ""
+        echo "For frontend access:"
+        echo "kubectl port-forward deployment/frontend 8080:3000"
+        echo "Then open: http://localhost:8080"
+        echo ""
+        echo "For backend access:"
+        echo "kubectl port-forward deployment/backend 5000:5000"
+        echo "Then access API at: http://localhost:5000/api/..."
+        echo ""
+        echo "For full application functionality, run both port-forward commands in separate terminals."
