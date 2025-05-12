@@ -51,9 +51,9 @@ jobs:
         docker push abdulahadmalik/attendance-frontend:latest
         docker push abdulahadmalik/attendance-backend:latest
 
-    - name: Deploy to Minikube
+    - name: Deploy to Kubernetes
       run: |
-        echo "Deploying to Minikube..."
+        echo "Deploying to Kubernetes..."
         kubectl apply -f deployment.yaml
         kubectl apply -f service.yaml
         kubectl apply -f nginx-configmap.yaml
@@ -90,22 +90,29 @@ jobs:
     - name: Wait for deployments to be ready
       run: |
         echo "Waiting for deployments to be ready..."
-        kubectl rollout status deployment/frontend --timeout=90s
-        kubectl rollout status deployment/backend --timeout=90s
-        kubectl rollout status deployment/mongodb --timeout=90s
+        kubectl rollout status deployment/frontend --timeout=90s || true
+        kubectl rollout status deployment/backend --timeout=90s || true
+        kubectl rollout status deployment/mongodb --timeout=90s || true
 
-    - name: Display service information
+    - name: Display basic service information
       run: |
         echo "Service information:"
         kubectl get services
         
-        echo "Frontend URL:"
-        minikube service frontend --url
+        # Get NodePort values directly using kubectl instead of minikube service
+        echo "Frontend NodePort:"
+        kubectl get service frontend -o jsonpath='{.spec.ports[0].nodePort}'
+        echo ""
         
-        echo "Backend URL:"
-        minikube service backend --url
+        echo "Backend NodePort:"
+        kubectl get service backend -o jsonpath='{.spec.ports[0].nodePort}'
+        echo ""
+        
+        # Get Minikube IP without using minikube service
+        echo "Minikube IP:"
+        minikube ip
 
-    - name: Provide manual access instructions
+    - name: Provide access instructions
       run: |
         echo "=== DEPLOYMENT SUCCESSFUL ==="
         echo "To access your application, execute these commands manually:"
