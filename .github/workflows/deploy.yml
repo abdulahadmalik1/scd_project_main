@@ -13,6 +13,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Check directory structure
+      run: |
+        echo "Checking directory structure..."
+        ls -la app/
+        # This will help confirm what's inside the app directory
+
     - name: Set up Docker to use Minikube's environment
       run: |
         echo "Configuring Docker to use Minikube's daemon..."
@@ -30,11 +36,11 @@ jobs:
     - name: Build Docker images
       run: |
         echo "Building Docker images..."
-        # Build frontend image
-        docker build -t abdulahadmalik/attendance-frontend:latest ./frontend
+        # Build frontend image from app/frontend directory
+        docker build -t abdulahadmalik/attendance-frontend:latest ./app/frontend
         
-        # Build backend image
-        docker build -t abdulahadmalik/attendance-backend:latest ./backend
+        # Build backend image from app/backend directory
+        docker build -t abdulahadmalik/attendance-backend:latest ./app/backend
 
     - name: Login to Docker Hub
       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "abdulahadmalik" --password-stdin
